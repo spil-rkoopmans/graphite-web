@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.conf import settings
 from graphite.render.hashing import compactHash
 from graphite.util import unpickle
+from graphite.logger import log
 
 
 
@@ -126,6 +127,9 @@ class RemoteNode:
     rawData = response.read()
 
     seriesList = unpickle.loads(rawData)
+
+    log.info("Fetched '%s' from %s, received %s series" % (query_string, self.store.host, len(seriesList)))
+    log.info("List contains: '%s'" % ([series['name'] for series in seriesList]))
 
     return seriesList
 
