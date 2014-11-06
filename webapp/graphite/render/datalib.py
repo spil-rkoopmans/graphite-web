@@ -287,11 +287,14 @@ def fetchData(requestContext, pathExpr):
     seriesList.append(series)
 
   if not requestContext['localOnly']:
+    log.info("Loading %s from %s remote nodes" % (pathExpr, STORE.remote_stores))
     remote_nodes = [ RemoteNode(store, pathExpr, True) for store in STORE.remote_stores ]
 
     for node in remote_nodes:
+      log.info("Issuing metrics request to: %s" % (node.store.host))
       results = node.fetch(startTime, endTime, now)
 
+      log.info("Remote node %s returned %s series" % (node.store.host, len(results)))
       for series in results:
         ts = TimeSeries(series['name'], series['start'], series['end'], series['step'], series['values'])
         ts.pathExpression = pathExpr # hack as above
@@ -299,24 +302,29 @@ def fetchData(requestContext, pathExpr):
         series_handled = False
         for known in seriesList:
           if series['name'] == known.name:
+            log.info("Series '%s' already in seriesList with length %s" % (series['name'], len(known)))
             candidate_nones = len([val for val in series['values'] if val is None])
             known_nones = len([val for val in known if val is None])
 
             series_handled = True
             if candidate_nones >= known_nones:
+              log.info("Dropping candidate for '%s' from %s because %s Nones is >= %s already in list" % (series['name'], node.store.host, candidate_nones, known_nones))
               # If we already have this series in the seriesList, and
               # it is 'worse' than the other series, we don't need to
               # compare anything else. Save ourselves some work here.
               break
             else:
+              log.info("Replacing candidate for '%s' from %s because %s Nones is not >= %s already in list" % (series['name'], node.store.host, candidate_nones, known_nones))
               seriesList[seriesList.index(known)] = ts
 
         # If we looked at this series above, and it matched a 'known'
         # series already, then it's already in the series list (or ignored).
         # If not, append it here.
         if not series_handled:
+          log.info("Appending '%s' from %s because we haven't seen it before" % (series['name'], node.store.host))
           seriesList.append(ts)
 
+  log.info("Returning %s series" % (len(seriesList)))
   return seriesList
 
 
