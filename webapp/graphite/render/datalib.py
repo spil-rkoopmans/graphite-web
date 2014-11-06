@@ -287,7 +287,7 @@ def fetchData(requestContext, pathExpr):
     seriesList.append(series)
 
   if not requestContext['localOnly']:
-    log.info("Loading %s from %s remote nodes" % (pathExpr, STORE.remote_stores))
+    log.info("Loading %s from %s remote nodes" % (pathExpr, len(STORE.remote_stores)))
     remote_nodes = [ RemoteNode(store, pathExpr, True) for store in STORE.remote_stores ]
 
     for node in remote_nodes:
